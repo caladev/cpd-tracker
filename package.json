@@ -1,0 +1,27 @@
+{
+  "name": "thin-mole",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,ui -c blue,magenta \"npm:dev:api\" \"npm:dev:ui\"",
+    "dev:ui": "vite",
+    "dev:api": "node server/index.mjs",
+    "build": "vite build",
+    "start": "npm run build && node server/index.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.1.2",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.4"
+  }
+}
