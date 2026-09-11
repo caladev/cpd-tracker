@@ -5,6 +5,12 @@ import { uploadFile, deleteFile, assetUrl } from '../api.js'
 const isImage = (name) => /\.(png|jpe?g|gif|webp|heic|heif)$/i.test(name)
 
 function EvidenceItem({ ev, onRemove }) {
+  const handleRemove = (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    onRemove()
+  }
+
   if (ev.kind === 'url') {
     return (
       <div className="ev-item">
@@ -12,7 +18,7 @@ function EvidenceItem({ ev, onRemove }) {
         <a className="ev-value" href={ev.value} target="_blank" rel="noreferrer" title={ev.value}>
           {ev.value}
         </a>
-        <button className="icon-btn icon-btn--danger" title="Remove" onClick={onRemove}>
+        <button type="button" className="icon-btn icon-btn--danger" title="Remove" onClick={handleRemove}>
           <TrashIcon width={14} height={14} />
         </button>
       </div>
@@ -29,7 +35,7 @@ function EvidenceItem({ ev, onRemove }) {
         <EyeIcon width={13} height={13} />
         {ev.filename || ev.value.split('/').pop()}
       </a>
-      <button className="icon-btn icon-btn--danger" title="Remove" onClick={onRemove}>
+      <button type="button" className="icon-btn icon-btn--danger" title="Remove" onClick={handleRemove}>
         <TrashIcon width={14} height={14} />
       </button>
     </div>
