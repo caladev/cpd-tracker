@@ -11,6 +11,13 @@ import {
 import { fyLabelsForTriennium } from '../lib/dates.js'
 
 const fmt = (n) => (Math.round(n * 100) / 100).toLocaleString('en-AU')
+const formatActivityDate = (date) => {
+  if (!date) return 'Undated'
+  const parsed = new Date(`${date}T00:00:00`)
+  return Number.isNaN(parsed.getTime())
+    ? date
+    : parsed.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 function statusOf(check) {
   if (check.ok) return 'ok'
@@ -273,7 +280,9 @@ export default function Dashboard({ data, triennium, ruleset, onEdit }) {
               <button key={e.id} className="recent-row" onClick={() => onEdit(e)}>
                 <span className="dot" style={{ background: e.verifiable ? 'var(--accent)' : 'var(--muted)' }} />
                 <span className="recent-title">{e.title}</span>
+                <span className="recent-date">{formatActivityDate(e.date)}</span>
                 <span className="recent-fy">{entryFY(e)}</span>
+                <span className={`badge badge--${e.status === 'Draft' ? 'draft' : 'actual'}`}>{e.status || 'Actual'}</span>
                 <span className="recent-hours">{fmt(e.hours)}h</span>
               </button>
             ))}

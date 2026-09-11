@@ -606,6 +606,12 @@ h3 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.recent-date {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .recent-fy {
   color: var(--muted);
   font-size: 12.5px;
