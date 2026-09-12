@@ -8,13 +8,14 @@
     "dev:stop": "node server/stop-dev.mjs",
     "dev:fresh": "npm run dev:stop && npm run dev",
     "dev:ui": "vite",
-    "dev:api": "node server/index.mjs",
+    "dev:api": "PORT=39890 node server/index.mjs",
     "build": "vite build",
     "start": "npm run build && node server/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "archiver": "^8.0.0",
     "express": "^5.1.0",
     "multer": "^2.0.1",
     "react": "^19.1.0",

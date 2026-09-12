@@ -1,67 +1,12 @@
 import React, { useMemo, useState } from 'react'
-import { DownloadIcon, PlusIcon, TrashIcon, CheckIcon } from './Icons.jsx'
+import { PlusIcon, TrashIcon, CheckIcon } from './Icons.jsx'
 import { createDefaultData } from '../lib/defaults.js'
 import { entriesForTriennium, activeRulesetForDate } from '../lib/rules.js'
 import { trienniumPeriodFor, trienniumLabelFor } from '../lib/dates.js'
 
-function download(filename, text, mime = 'text/plain') {
-  const blob = new Blob([text], { type: mime })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-
-function esc(v) {
-  const s = v == null ? '' : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
 export default function Settings({ data, info, persist, setTrienniumId }) {
   const [startYear, setStartYear] = useState('')
   const [confirmReset, setConfirmReset] = useState(false)
-
-  const exportJson = () => download('cpd_data.json', JSON.stringify(data, null, 2), 'application/json')
-
-  const exportCsv = () => {
-    const header = [
-      'FY',
-      'Type',
-      'Date',
-      'Activity Details',
-      'Provider',
-      'Hours',
-      'Relevance',
-      'Verifiable?',
-      'On-the-job?',
-      'Ethics Hours',
-      'Verifiable Evidence Reference',
-      'Related to accounting specialisations?',
-      'Notes',
-    ]
-    const rows = data.entries.map((e) =>
-      [
-        e.fy,
-        e.status,
-        e.date || 'Misc',
-        e.title,
-        e.provider,
-        e.hours,
-        e.relevance,
-        e.verifiable ? 'Yes' : 'No',
-        e.onTheJob ? 'Yes' : 'No',
-        e.ethicsHours || 0,
-        (e.evidence || []).map((x) => x.value).join('; '),
-        e.specialisation ? 'Yes' : 'No',
-        e.notes,
-      ]
-        .map(esc)
-        .join(','),
-    )
-    download('cpd_hours.csv', [header.join(','), ...rows].join('\n'), 'text/csv')
-  }
 
   const addTriennium = () => {
     const y = Number(startYear)
@@ -181,26 +126,6 @@ export default function Settings({ data, info, persist, setTrienniumId }) {
             Add triennium
           </button>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="card-head">
-          <h3>Export</h3>
-        </div>
-        <div className="btn-row">
-          <button className="btn btn--ghost" onClick={exportJson}>
-            <DownloadIcon width={15} height={15} />
-            Export JSON
-          </button>
-          <button className="btn btn--ghost" onClick={exportCsv}>
-            <DownloadIcon width={15} height={15} />
-            Export CSV
-          </button>
-        </div>
-        <p className="muted note">
-          CSV mirrors the CPD Hours sheet: FY, status, date, activity, provider, hours, relevance,
-          verifiable, OJT, ethics, evidence, specialisations.
-        </p>
       </div>
 
       <div className="card">

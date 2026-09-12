@@ -4,6 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
 import url from 'node:url'
+import { ZipArchive } from 'archiver'
 import {
   dataPaths,
   ensureDirs,
@@ -14,6 +15,8 @@ import {
   sanitizeId,
   resolvePathIn,
 } from './lib.mjs'
+import { detailCsv, evidenceFilesForExport, exportDate, summaryCsv } from './export.mjs'
+import { scopeExport } from '../src/lib/exportScope.js'
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const APP_ROOT = path.resolve(__dirname, '..')
@@ -144,6 +147,53 @@ app.delete('/api/file', (req, res) => {
   res.json({ ok: true })
 })
 
+app.use('/api/export', (req, res, next) => {
+  try {
+    res.locals.exportData = scopeExport(data, req.query.trienniumId)
+    next()
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+app.get('/api/export/archive', async (req, res) => {
+  const data = res.locals.exportData
+  const date = exportDate()
+  const includeEvidence = req.query.includeEvidence === 'true'
+  const archive = new ZipArchive({ zlib: { level: 9 } })
+  const evidenceFiles = includeEvidence ? evidenceFilesForExport(data, DATA_DIR, PATHS.evidenceDir) : []
+  const names = new Map(evidenceFiles.map((file) => [file.reference, file.name]))
+
+  archive.on('error', (err) => {
+    if (!res.headersSent) res.status(500).json({ error: err.message })
+    else res.destroy(err)
+  })
+
+  res.attachment(`cpd-export-${date}.zip`)
+  archive.pipe(res)
+  archive.append(`\ufeff${summaryCsv(data)}`, { name: `cpd-summary-${date}.csv` })
+  archive.append(`\ufeff${detailCsv(data, names)}`, { name: `cpd-detail-${date}.csv` })
+  if (includeEvidence) {
+    for (const evidence of evidenceFiles) {
+      archive.file(evidence.file, { name: evidence.name })
+    }
+  }
+  await archive.finalize()
+})
+
+app.get('/api/export/:report', (req, res) => {
+  const data = res.locals.exportData
+  const date = exportDate()
+  const reports = {
+    summary: { filename: `cpd-summary-${date}.csv`, content: summaryCsv(data) },
+    detail: { filename: `cpd-detail-${date}.csv`, content: detailCsv(data) },
+  }
+  const report = reports[req.params.report]
+  if (!report) return res.status(404).json({ error: 'Unknown export report' })
+  res.attachment(report.filename)
+  res.type('text/csv; charset=utf-8').send(`\ufeff${report.content}`)
+})
+
 if (fs.existsSync(DIST_DIR)) {
   app.use(express.static(DIST_DIR))
   app.get(/^\/(?!api\/).*/, (_req, res) => {
@@ -151,7 +201,7 @@ if (fs.existsSync(DIST_DIR)) {
   })
 }
 
-const PORT = Number(process.env.PORT || 5174)
+const PORT = Number(process.env.PORT || 39889)
 app.listen(PORT, () => {
   console.log(`[cpd] API listening on http://localhost:${PORT}`)
   console.log(`[cpd] data dir: ${DATA_DIR}`)

@@ -8,6 +8,7 @@ import {
   RulesIcon,
   ShieldIcon,
   GearIcon,
+  DownloadIcon,
   PlusIcon,
   SparkIcon,
 } from './components/Icons.jsx'
@@ -17,12 +18,14 @@ import RulesManager from './components/RulesManager.jsx'
 import Exemptions from './components/Exemptions.jsx'
 import Settings from './components/Settings.jsx'
 import EntryModal from './components/EntryModal.jsx'
+import ExportPage from './components/ExportPage.jsx'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: DashIcon },
   { id: 'entries', label: 'CPD Hours', icon: ListIcon },
   { id: 'rules', label: 'Rules', icon: RulesIcon },
   { id: 'exemptions', label: 'Exemptions', icon: ShieldIcon },
+  { id: 'export', label: 'Export', icon: DownloadIcon },
   { id: 'settings', label: 'Settings', icon: GearIcon },
 ]
 
@@ -249,6 +252,7 @@ export default function App() {
           )}
           {tab === 'rules' && <RulesManager data={data} persist={persist} />}
           {tab === 'exemptions' && <Exemptions data={data} persist={persist} ruleset={ruleset} />}
+          {tab === 'export' && <ExportPage data={data} />}
           {tab === 'settings' && (
             <Settings data={data} info={info} persist={persist} setTrienniumId={setTrienniumId} />
           )}
