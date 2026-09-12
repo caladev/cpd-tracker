@@ -173,12 +173,14 @@ export default function App() {
           </div>
         </div>
 
-        <nav className="nav">
+        <nav className="nav" aria-label="Main navigation">
           {NAV.map((item) => {
             const Icon = item.icon
             return (
               <button
                 key={item.id}
+                type="button"
+                aria-current={tab === item.id ? 'page' : undefined}
                 className={`nav-item${tab === item.id ? ' nav-item--active' : ''}`}
                 onClick={() => setTab(item.id)}
               >
