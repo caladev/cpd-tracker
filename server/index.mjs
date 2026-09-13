@@ -202,7 +202,8 @@ if (fs.existsSync(DIST_DIR)) {
 }
 
 const PORT = Number(process.env.PORT || 39889)
-app.listen(PORT, () => {
+export { app }
+if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`[cpd] API listening on http://localhost:${PORT}`)
   console.log(`[cpd] data dir: ${DATA_DIR}`)
 })

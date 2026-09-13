@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -16,12 +16,64 @@ vi.mock('./api.js', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-13T00:00:00Z'))
   getData.mockResolvedValue(createDefaultData())
   getInfo.mockResolvedValue({ entryCount: 0, persisted: true })
+  saveData.mockImplementation(async (data) => data)
 })
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.useRealTimers() })
 
 describe('main navigation', () => {
+  it('shows startup errors instead of presenting an empty tracker', async () => {
+    getData.mockRejectedValueOnce(new Error('Storage unavailable'))
+    render(React.createElement(App))
+    expect(await screen.findByText('Storage unavailable')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy()
+    expect(saveData).not.toHaveBeenCalled()
+  })
+
+  it('creates an entry, edits it, promotes a draft and deletes it through the app', async () => {
+    const user = userEvent.setup()
+    render(React.createElement(App))
+    const nav = await screen.findByRole('navigation', { name: 'Main navigation' })
+    await user.click(screen.getAllByRole('button', { name: 'New entry', exact: true })[0])
+    fireEvent.change(screen.getByLabelText(/^Activity/), { target: { value: 'New activity' } })
+    fireEvent.change(screen.getByLabelText(/^Hours/), { target: { value: '2' } })
+    await user.click(screen.getByRole('button', { name: 'Draft', exact: true }))
+    await user.click(within(screen.getByLabelText(/^Activity/).closest('form')).getByRole('button', { name: 'Add entry', exact: true }))
+    await waitFor(() => expect(screen.queryByText('New CPD entry')).toBeNull())
+    expect(saveData.mock.calls[0][0].entries[0]).toMatchObject({ title: 'New activity', hours: 2, status: 'Draft' })
+    await user.click(within(nav).getByRole('button', { name: 'CPD Hours' }))
+    await user.click(screen.getByTitle('Edit'))
+    fireEvent.change(screen.getByLabelText(/^Activity/), { target: { value: 'Edited activity' } })
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    await waitFor(() => expect(screen.queryByText('Edit CPD entry')).toBeNull())
+    expect(saveData.mock.calls[1][0].entries[0].title).toBe('Edited activity')
+    await user.click(screen.getByTitle('Mark as Actual'))
+    expect(saveData.mock.calls[2][0].entries[0].status).toBe('Actual')
+    await user.click(screen.getByTitle('Delete'))
+    expect(saveData).toHaveBeenCalledTimes(3)
+    await user.click(screen.getByTitle('Confirm delete'))
+    expect(saveData.mock.calls[3][0].entries).toEqual([])
+    expect(await screen.findByText('No entries match')).toBeTruthy()
+  })
+
+  it('cleans up file evidence when deleting an entry, even if one file is already missing', async () => {
+    const data = createDefaultData()
+    data.entries = [{ id: 'one', title: 'Course', hours: 1, status: 'Actual', trienniumId: data.trienniums[0].id,
+      evidence: [{ kind: 'file', value: 'evidence/a.pdf' }, { kind: 'url', value: 'https://example.org' }] }]
+    getData.mockResolvedValueOnce(data)
+    deleteFile.mockRejectedValueOnce(new Error('Not found'))
+    render(React.createElement(App))
+    const nav = await screen.findByRole('navigation', { name: 'Main navigation' })
+    await userEvent.click(within(nav).getByRole('button', { name: 'CPD Hours' }))
+    await userEvent.click(screen.getByTitle('Delete'))
+    await userEvent.click(screen.getByTitle('Confirm delete'))
+    expect(deleteFile).toHaveBeenCalledWith('evidence/a.pdf')
+    expect(deleteFile).toHaveBeenCalledTimes(1)
+    expect(saveData.mock.calls[0][0].entries).toEqual([])
+  })
   it('exposes every page as a named, non-submit button with one current page', async () => {
     render(React.createElement(App))
     const nav = await screen.findByRole('navigation', { name: 'Main navigation' })

@@ -66,6 +66,17 @@ describe('export reports', () => {
     expect(report).toContain('https://example.com/article')
   })
 
+  it('escapes quotes and newlines and handles empty reports without mutating entries', () => {
+    const source = { ...data, entries: [{ ...data.entries[0], title: 'A "quoted" course', notes: 'Line one\nLine two' }] }
+    const before = structuredClone(source)
+    const report = detailCsv(source)
+    expect(report).toContain('"A ""quoted"" course"')
+    expect(report).toContain('"Line one\nLine two"')
+    expect(source).toEqual(before)
+    expect(detailCsv({ entries: [], trienniums: [] }).split('\n')).toHaveLength(1)
+    expect(summaryCsv({ entries: [], trienniums: [] }).split('\n')).toHaveLength(1)
+  })
+
   it('uses a stable date in filenames', () => {
     expect(exportDate(new Date('2026-09-12T10:00:00Z'))).toBe('2026-09-12')
     expect(exportDate(new Date('2026-09-11T20:00:00Z'))).toBe('2026-09-12')

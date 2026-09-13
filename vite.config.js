@@ -12,6 +12,15 @@ export default defineConfig({
     }
   },
   test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      include: ['src/**/*.{js,jsx}', 'server/**/*.mjs'],
+      exclude: ['**/*.test.*', 'src/main.jsx', 'src/components/Icons.jsx', 'server/stop-dev.mjs'],
+      thresholds: {
+        statements: 95, lines: 95, branches: 80, functions: 83,
+      },
+    },
     environment: 'node',
     include: ['src/**/*.test.js', 'server/**/*.test.mjs']
   }
